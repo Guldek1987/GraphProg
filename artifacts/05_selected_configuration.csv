@@ -1,0 +1,15 @@
+Model,Parameter,Value
+AlphaProg-AGMT,Base predictor,LightGBM
+AlphaProg-AGMT,Graph width,32
+AlphaProg-AGMT,Graph steps,2
+AlphaProg-AGMT,History limit,32
+AlphaProg-AGMT,Raw history channels,30
+AlphaProg-AGMT,History task descriptors,8
+AlphaProg-AGMT,Node limit,64
+AlphaProg-AGMT,Epochs,8
+AlphaProg-AGMT,Learning rate,0.001
+AlphaProg-AGMT,Auxiliary weight,0.1
+AlphaProg-AGMT,Weight decay,0.0001
+AlphaProg-AGMT,Dropout,0.1
+AlphaProg-AGMT,Gate L2,0.001
+AlphaProg-AGMT,Gate prior,0.2

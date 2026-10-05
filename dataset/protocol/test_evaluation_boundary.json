@@ -1,0 +1,1 @@
+{"frozen_signature": "04da6ee225dacab341630d3d61d035a9d73bf35e90ecdea7c50a0050ea89eef5", "primary_models": ["GlobalMean", "ItemMean", "LogisticRegression", "RandomForest", "XGBoost", "LightGBM", "DKT", "AKT", "UKT", "TabM", "GraphTrajectory", "AlphaProg-AGMT"], "aggregation": "mean probability across available fixed seeds"}

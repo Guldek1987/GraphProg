@@ -1,0 +1,10 @@
+{
+  "feature_revision": "event_prefix_v2",
+  "notebooks": {
+    "01_Data_and_Research_Design.ipynb": "af88dd18a2cc4b584187993d3f982795977cbd7223ae2e8b190b590ee0f135c5",
+    "02_EDA_and_Leakage_Safe_Features.ipynb": "77bc6c5fdb529a367c08fd797c894b7c09f9fddbfe0a9adddd554bd3d0f1fde9",
+    "03_Baseline_Models.ipynb": "ab0da90c50240f495a16caea146191b5c47d72827622f83784e84ad17b301878",
+    "04_Contemporary_Models.ipynb": "60d9d42f4ce46814f25e92dae93a28bb89c69efe8c1755eacbc073abc080dd80",
+    "05_Proposed_Model_and_Ablations.ipynb": "f4fa21c0d533fecaba7f3b0aa9207fc9b621e9fa40bfc93c3399ee2d00d2065e"
+  }
+}

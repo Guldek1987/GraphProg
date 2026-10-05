@@ -1,0 +1,19 @@
+{
+  "seed": 20260923,
+  "primary_metric": "MAE",
+  "secondary_metrics": [
+    "RMSE",
+    "R2"
+  ],
+  "seeds": [
+    17,
+    42,
+    2026
+  ],
+  "inner_cv": "LeaveOneGroupOut by school on train",
+  "validation": "One held-out school; selection evidence is exploratory",
+  "locked_test": "Two held-out schools; do not read during development",
+  "split_sha256": "6e2e34a5a56682e42b44cfe56763b51aa1e0c0a839be893776a67198f4cca0d3",
+  "robo_data_available": true,
+  "no_linkage_between_sources": true
+}

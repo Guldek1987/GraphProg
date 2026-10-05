@@ -1,0 +1,142 @@
+# GraphProg
+
+**Graph and sequence models for programming trajectories, first-run success, and censored execution effort.**
+
+GraphProg studies whether the structure and temporal order of previously observed programs improve predictions for a learner's first visit to a programming task. It provides seven executable notebooks, source data, saved experimental outputs, compact result tables, and numbered figures.
+
+The implemented **AlphaProg-AGMT** combines a LightGBM reference model with a graph-and-GRU trajectory expert through an out-of-fold reliability gate. **GraphTrajectory** denotes the standalone trajectory expert. A separate school experiment predicts post-test computational-thinking scores from pre-test and contextual measurements; the two datasets are not linked at the individual level.
+
+[Notebooks](notebooks/) · [Data](dataset/) · [Results](artifacts/) · [Figures](figures/)
+
+## Experimental results
+
+The main comparison uses the same **22,899 held-out first-task visits from 1,762 learners**. Stochastic methods average probabilities across seeds 17, 42, and 2026. Lower LogLoss and Brier scores are better; higher AUROC and average precision are better.
+
+| Model | LogLoss ↓ | AUROC ↑ | Average precision ↑ | Brier ↓ |
+| :--- | ---: | ---: | ---: | ---: |
+| GraphTrajectory | 0.52840 | 0.80507 | 0.74117 | 0.17795 |
+| AlphaProg-AGMT | 0.52915 | 0.80469 | 0.74108 | 0.17820 |
+| LightGBM | 0.53564 | 0.79955 | 0.73497 | 0.18051 |
+| TabM | 0.53631 | 0.79867 | 0.73473 | 0.18079 |
+| XGBoost | 0.53692 | 0.79882 | 0.73472 | 0.18089 |
+| DKT | 0.54160 | 0.79473 | 0.73131 | 0.18265 |
+| AKT | 0.54259 | 0.79349 | 0.72697 | 0.18312 |
+| UKT | 0.54500 | 0.79094 | 0.72334 | 0.18430 |
+| RandomForest | 0.54567 | 0.79373 | 0.72961 | 0.18395 |
+| LogisticRegression | 0.55674 | 0.78039 | 0.70667 | 0.18832 |
+| ItemMean | 0.59025 | 0.73948 | 0.63429 | 0.20277 |
+| GlobalMean | 0.68410 | 0.50000 | 0.43286 | 0.24549 |
+
+GraphTrajectory has the lowest observed episode-level LogLoss. AlphaProg-AGMT improves on the trained tabular and knowledge-tracing comparators, but its adaptive fusion does **not** establish an improvement over GraphTrajectory on the primary metric. The results concern these implementations and training budgets.
+
+### Paired differences
+
+Positive reductions favor AlphaProg-AGMT. Resampling retains complete learner trajectories; intervals are pointwise 95% intervals. Holm adjustment applies to the family of eleven paired zero-effect tests, not to simultaneous interval coverage.
+
+| Comparator | LogLoss reduction | 95% learner-bootstrap interval | Holm-adjusted p |
+| :--- | ---: | :---: | ---: |
+| LightGBM | 0.00650 | [0.00536, 0.00758] | 0.00550 |
+| TabM | 0.00716 | [0.00578, 0.00848] | 0.00550 |
+| GraphTrajectory | -0.00074 | [-0.00193, 0.00049] | 0.22839 |
+
+The predefined practical reference is a LogLoss reduction of 0.005. The sign-flip tests additionally assume symmetric learner-level effects under the null. See [paired effects](artifacts/06_paired_effects.csv) and [statistical comparisons](artifacts/07_statistical_tests.csv) for every comparator.
+
+### Execution effort and the school task
+
+AlphaProg-AGMT attains a joint first-success **NLL of 1.56754**, compared with 1.57781 for LightGBM and 1.57847 for TabM, each paired with the same separately trained hazard companion. The NLL reduction against LightGBM is 0.01027 with a pointwise 95% learner-bootstrap interval of [0.00858, 0.01213]. These are secondary outcomes with explicit censoring assumptions.
+
+In the separate school test, **RidgePretest** achieves MAE 2.64810, RMSE 3.35857, and R² 0.50617 on 397 observations from two schools. This is a different target and population, not external validation of RoboMission predictions.
+
+[Effort results](artifacts/07_effort.csv) · [Effort differences](artifacts/07_effort_effects.csv) · [School results](artifacts/07_school_quality.csv)
+
+## Model
+
+The trajectory expert encodes command nodes, parent relations, and ordered sibling relations in previously observed programs. Two message-passing steps produce program representations; a GRU summarizes up to 32 past attempt prefixes together with process variables and known task descriptors. Two output heads predict first-run success and the conditional success hazard after an initial failure.
+
+For first-run success probability $p$ and subsequent-run hazard $q$,
+
+$$P(T=1)=p,\qquad P(T=r)=(1-p)(1-q)^{r-2}q,\quad r\geq2.$$
+
+Observed and right-censored attempts contribute to the likelihood. The auxiliary training loss is normalized by observed tail exposure. A regularized gate learns a common mixing weight for the two outputs from component OOF predictions; its hyperparameters are selected on validation. Across seeds, $p$ and $q$ are averaged before the geometric cumulative distribution is evaluated.
+
+![AlphaProg-AGMT model architecture](figures/16_AlphaProg_AGMT_model_architecture.png)
+
+Ablations remove the graph encoder, temporal recurrence, auxiliary loss, regularization, or graph edges, and compare adaptive with constant fusion and the best single component. NoEdges preserves the active parameter count. NoOrder also changes model capacity, so its effect is not isolated to ordering alone. Ablation comparisons use seed 17, whereas the main results use three-seed averages. [Full ablation table](artifacts/07_ablations.csv).
+
+## Data and evaluation design
+
+| Dataset | Training | Validation | Test | Group separation |
+| :--- | ---: | ---: | ---: | :--- |
+| RoboMission first-task visits | 108,877 | 23,326 | 22,899 | Learner identifiers |
+| School paired cCTt scores | 909 | 157 | 397 | Schools: 4 / 1 / 2 |
+
+The RoboMission December 2019 archive contains 2,615,264 edit/execution events, 164,707 attempts, 11,675 learner identifiers, and 85 tasks. The prediction cohort contains 155,102 first visits with an observed first execution. A further 2,232 first visits without an observed execution are excluded from the binary outcome rather than labelled failures.
+
+Predictors use only events observed strictly before the new visit starts. Already observed prefixes of ongoing earlier attempts remain available; future completion does not determine eligibility. Preprocessing and graph vocabularies are fitted inside learner-held-out training folds. The same known task catalog and overlapping calendar period occur across splits, so evaluation concerns new learners rather than unseen tasks or future years.
+
+School data come from [Zenodo record 7489244](https://doi.org/10.5281/zenodo.7489244), by El-Hamamsy, Bruno, Dehler Zufferey, and Mondada (CC BY 4.0). RoboMission is obtained from the public archive linked by its [official research repository](https://github.com/adaptive-learning/adaptive-learning-research/tree/master/data/robomission-2019-02-09). Dataset descriptions and attribution are retained under [dataset](dataset/README.md).
+
+## Run the notebooks
+
+Use **Python 3.11**. The numerical environment used for the saved outputs is pinned in `requirements.txt`.
+
+```bash
+git clone https://github.com/Guldek1987/GraphProg.git
+cd GraphProg
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m ipykernel install --user --name graphprog --display-name "Python 3 (GraphProg)"
+python -m jupyterlab
+```
+
+On Windows, activate the environment with `.venv\Scripts\activate`. LightGBM may require the OpenMP runtime on macOS (`brew install libomp`). Install **Times New Roman** through a licensed system font installation before regenerating figures. The font is not redistributed here. Tables retain the standard pandas/Jupyter appearance; Matplotlib figures use 18–20 pt text and 350 DPI.
+
+Open the notebooks in numerical order and execute every code cell from top to bottom, starting a fresh kernel for each notebook. Notebook 01 unpacks only the three required RoboMission CSV files from the included archive. No Google Drive authentication or separate data download is required for the included snapshot.
+
+| Notebook | Contents |
+| :--- | :--- |
+| [01 Data and research design](notebooks/01_Data_and_Research_Design.ipynb) | Source cohorts, measurement quality, grouped splits, temporal availability |
+| [02 EDA and features](notebooks/02_EDA_and_Leakage_Safe_Features.ipynb) | MiniCode graphs, event-prefix features, distributions, Spearman, mutual information, XGBoost dependence |
+| [03 Baselines](notebooks/03_Baseline_Models.ipynb) | Simple probabilities, logistic regression, random forest, XGBoost, LightGBM, school models |
+| [04 Contemporary models](notebooks/04_Contemporary_Models.ipynb) | DKT, AKT, UKT, TabM, OOF predictions, seed/fold variation, residual structure |
+| [05 Trajectory model and ablations](notebooks/05_Proposed_Model_and_Ablations.ipynb) | Graph/GRU implementation, censored loss, OOF fusion, sensitivity, ablations |
+| [06 Model analysis](notebooks/06_Model_Analysis.ipynb) | Frozen test predictions, clustered uncertainty, calibration, subgroups, missing-history stress, errors, efficiency |
+| [07 Results](notebooks/07_Results.ipynb) | Comparable final tables and diagnostic figures |
+
+The full sequence retrains the models and can take several hours on a workstation. AKT uses CPU execution in the recorded experiment; other neural models use Apple MPS where available, with CPU support in the training code. Stored training and inference times describe the original execution, not a hardware-independent benchmark. The fit timings exclude cross-fitting and hyperparameter search.
+
+Saved notebook outputs and the compact CSV tables can be inspected without retraining. Intermediate feature arrays, OOF probabilities, fitted checkpoints, and generated diagnostics are rebuilt locally and excluded from Git. Later notebooks therefore require the preceding computational stages; the repository does not replace model training with static-result display cells.
+
+The packaging pass preserves previously computed scientific outputs. It checks notebook structure, code, data integrity, dependencies, and portable paths; it is not a second full training run in a clean environment. Test results are already known. Frozen settings and source guards support reproduction of that evaluation; they do not turn subsequent experimentation into a new untouched test.
+
+## Repository layout
+
+```text
+dataset/       source archive, school CSVs, data attribution, fixed evaluation settings
+notebooks/     seven notebooks and pinned third-party model implementations
+artifacts/     compact CSV result tables
+figures/       23 numbered figures
+requirements.txt
+```
+
+Execution creates `dataset/processed/`, `artifacts/runtime/`, and `figures/generated/`. Additional intermediate CSV/JSON files are generated by the notebooks and ignored by Git. The included snapshot contains no local environment, training-log dump, or serialized model bundle.
+
+## Scope and limitations
+
+- Outcomes are observational predictions conditional on the recorded choice of task. Improvements do not demonstrate a causal effect on learning or the utility of a recommendation policy.
+- RoboMission ages are not documented; the project does not identify an Alpha-generation cohort.
+- The geometric effort model assumes a constant conditional tail hazard. IPCW diagnostics rely on censoring assumptions that were not established experimentally.
+- Learner-clustered uncertainty does not account for unknown shared classrooms. The school test contains only two independent schools.
+- Architecture comparisons use bounded search spaces and different input representations. FA-KT and every other recent method are not claimed to have been reproduced.
+- Peak RAM was not measured. CPU/MPS timings are reported for the original device choices; comparisons are not normalized by hardware.
+
+## Implementations and references
+
+- DKT: [Piech et al., 2015](https://arxiv.org/abs/1506.05908), recurrent interaction baseline implemented in notebook 04.
+- AKT: [Ghosh et al., 2020](https://arxiv.org/abs/2007.12324).
+- UKT: [Uncertainty-aware Knowledge Tracing](https://arxiv.org/abs/2501.05415).
+- AKT/UKT source: [pyKT revision 77c3e90](https://github.com/pykt-team/pykt-toolkit/tree/77c3e90fdb807542194b989656ccac10e5d92e12), included under its MIT license. The UKT loader removes one unused relative utilities import; model operations are retained.
+- TabM: [official implementation](https://github.com/yandex-research/tabm), version 0.0.3.
+
+Third-party datasets and implementations retain their respective upstream terms and attribution. See [data sources](dataset/README.md) and [vendor notice](notebooks/_vendor/pykt/README.md).

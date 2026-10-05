@@ -1,0 +1,24 @@
+{
+  "seed": 20260923,
+  "primary_metric": "log_loss",
+  "secondary_metrics": [
+    "roc_auc",
+    "average_precision",
+    "brier"
+  ],
+  "seeds": [
+    17,
+    42,
+    2026
+  ],
+  "folds": 3,
+  "prediction_time": "start of first visit to a new problem",
+  "history_rule": "events strictly before current attempt start; no current-attempt final aggregates",
+  "source_version": "2019-12-10",
+  "split_sha256": "179f8b05f6cc2bf27c9a9d281987c8783867b5aee89bfb1ed8d8ed632bba40fd",
+  "locked_test_opened": true,
+  "robo_data_available": true,
+  "primary_endpoint": "first execution correctness",
+  "practical_logloss_improvement": 0.005,
+  "no_pedagogical_causal_claim": true
+}
